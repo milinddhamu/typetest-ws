@@ -237,6 +237,7 @@ typetestNamespace.on('connection',(socket) => {
       existingRoom.players.push({ name: playerName, id: socket.id });
       let data = {
         room: existingRoom,
+        sentence:sentence
       }
       typetestNamespace.to(room).emit('gameUpdate', data);
       console.log(`${playerName} joined room ${room}`);
