@@ -258,9 +258,10 @@ typetestNamespace.on('connection',(socket) => {
   });
   socket.on('startedTyping', ({input,socketId,gameRoomId}) => {
     const room = gameRoomId.trim().toLowerCase();
-    const data = {opponentText:"Hello world here"}
-    typetestNamespace.to(room).emit('startTyping',data);
-    
+    typetestNamespace.to(room).emit('opponentStartedTyping', {
+      socketId: socketId,
+      opponentText: input,
+    });
   });
 
 
