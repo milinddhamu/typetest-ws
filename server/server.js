@@ -214,7 +214,7 @@ typetestNamespace.on('connection',(socket) => {
     const room = gameRoomId.trim().toLowerCase();
     if(!rooms[room]) {
       socket.join(room);
-      rooms[room] = {players:[{name: playerName , id: socket.id }],testSentence : testSentence}
+      rooms[room] = {players:[{name: playerName , id: socket.id }]}
       const opponent = rooms[room].players.find(player => player.id !== socket.id);
       const opponentName = opponent ? opponent.name : '';
       typetestNamespace.to(room).emit('gameUpdate', {
