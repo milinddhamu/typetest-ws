@@ -264,7 +264,12 @@ typetestNamespace.on('connection',(socket) => {
       opponentText: input,
     });
   });
+  socket.on('restartGame', ({ gameRoomId }) => {
+    const room = gameRoomId.trim().toLowerCase();
 
+    // Broadcast the restart event to all users in the room
+    typetestNamespace.to(room).emit('gameRestart', { gameRoomId });
+  });
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
