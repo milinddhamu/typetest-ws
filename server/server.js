@@ -48,6 +48,14 @@ app.get('/', (req, res) => {
   res.send('Hello, World! This is your server responding.');
 });
 
+app.get('/tictactoe', (req, res) => {
+  res.send('Welcome to the Tic Tac Toe game!');
+});
+
+app.get('/typetest', (req, res) => {
+  res.send('Welcome to the TypeTest game!');
+});
+
 const tictactoeNamespace = io.of('/tictactoe');
 
 tictactoeNamespace.on('connection', (socket) => {
