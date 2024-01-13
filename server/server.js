@@ -61,9 +61,6 @@ app.get('/typetest', (req, res) => {
   res.send('Welcome to the TypeTest game!');
 });
 
-
-
-
 const tictactoeNamespace = io.of('/tictactoe');
   tictactoeNamespace.use((socket, next) => {
     const token = socket.handshake.auth.token;
