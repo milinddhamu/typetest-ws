@@ -5,6 +5,9 @@ const app = express();
 const server = http.createServer(app);
 const cors = require('cors');
 const PORT = process.env.PORT || 3001;
+const jwt = require('jsonwebtoken')
+
+
 app.use(cors()); // Enable CORS for all routes
 
 const io = socketIo(server, {
@@ -14,8 +17,10 @@ const io = socketIo(server, {
   }
 });
 
+
+
 const rooms = {};
-const testSentence = "Nuclear power is the use of nuclear reactions to produce electricity. Nuclear power can be obtained from nuclear fission, nuclear decay and nuclear fusion reactions. Presently, the vast majority of electricity from nuclear power is produced by nuclear fission of uranium and plutonium in nuclear power plants.";
+const sentence = "Nuclear power is the use of nuclear reactions to produce electricity. Nuclear power can be obtained from nuclear fission, nuclear decay and nuclear fusion reactions. Presently, the vast majority of electricity from nuclear power is produced by nuclear fission of uranium and plutonium in nuclear power plants.";
 
 const calculateWinner = (board) => {
   const markedCount = board.filter((cell) => cell.value !== '').length;
@@ -48,7 +53,40 @@ app.get('/', (req, res) => {
   res.send('Hello, World! This is your server responding.');
 });
 
+app.get('/tictactoe', (req, res) => {
+  res.send('Welcome to the Tic Tac Toe game!');
+});
+
+app.get('/typetest', (req, res) => {
+  res.send('Welcome to the TypeTest game!');
+});
+
+
+
+
 const tictactoeNamespace = io.of('/tictactoe');
+  tictactoeNamespace.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+
+      if (!token) {
+        console.log("Authentication error");
+        const err = new Error("not authorized");
+        return next(err);
+      }
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          console.log("Authentication error");
+          const err = new Error("not authorized");
+          return next(err);
+        }
+        // Attach the decoded user information to the socket object
+        socket.user = decoded;
+        next();
+      });
+    });
+
+  
 
 tictactoeNamespace.on('connection', (socket) => {
   console.log(`A user connected ${socket.id}`);
@@ -207,14 +245,37 @@ tictactoeNamespace.on('connection', (socket) => {
 
 const typetestNamespace = io.of('/typetest');
 
+  typetestNamespace.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+
+      if (!token) {
+        console.log("Authentication error");
+        const err = new Error("not authorized");
+        return next(err);
+      }
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          console.log("Authentication error");
+          const err = new Error("not authorized");
+          return next(err);
+        }
+        // Attach the decoded user information to the socket object
+        socket.user = decoded;
+        next();
+      });
+    });
+
 typetestNamespace.on('connection',(socket) => {
+  console.log(`auth connected ${socket.user?.userId}`);
+
   console.log(`A user connected ${socket.id}`);
 
   socket.on('createRoom',({playerName, gameRoomId}) => {
     const room = gameRoomId.trim().toLowerCase();
     if(!rooms[room]) {
       socket.join(room);
-      rooms[room] = {players:[{name: playerName , id: socket.id }],testSentence : testSentence}
+      rooms[room] = {players:[{name: playerName , id: socket.id }]}
       const opponent = rooms[room].players.find(player => player.id !== socket.id);
       const opponentName = opponent ? opponent.name : '';
       typetestNamespace.to(room).emit('gameUpdate', {
@@ -237,6 +298,7 @@ typetestNamespace.on('connection',(socket) => {
       existingRoom.players.push({ name: playerName, id: socket.id });
       let data = {
         room: existingRoom,
+        sentence:sentence
       }
       typetestNamespace.to(room).emit('gameUpdate', data);
       console.log(`${playerName} joined room ${room}`);
@@ -258,11 +320,17 @@ typetestNamespace.on('connection',(socket) => {
   });
   socket.on('startedTyping', ({input,socketId,gameRoomId}) => {
     const room = gameRoomId.trim().toLowerCase();
-    const data = {opponentText:"Hello world here"}
-    typetestNamespace.to(room).emit('startTyping',data);
-    
+    typetestNamespace.to(room).emit('opponentStartedTyping', {
+      socketId: socketId,
+      opponentText: input,
+    });
   });
+  socket.on('restartGame', ({ gameRoomId }) => {
+    const room = gameRoomId.trim().toLowerCase();
 
+    // Broadcast the restart event to all users in the room
+    typetestNamespace.to(room).emit('gameRestart', { gameRoomId });
+  });
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
