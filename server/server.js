@@ -5,6 +5,9 @@ const app = express();
 const server = http.createServer(app);
 const cors = require('cors');
 const PORT = process.env.PORT || 3001;
+const jwt = require('jsonwebtoken')
+
+
 app.use(cors()); // Enable CORS for all routes
 
 const io = socketIo(server, {
@@ -13,6 +16,8 @@ const io = socketIo(server, {
     methods: ["GET", "POST"]
   }
 });
+
+
 
 const rooms = {};
 const sentence = "Nuclear power is the use of nuclear reactions to produce electricity. Nuclear power can be obtained from nuclear fission, nuclear decay and nuclear fusion reactions. Presently, the vast majority of electricity from nuclear power is produced by nuclear fission of uranium and plutonium in nuclear power plants.";
@@ -57,6 +62,28 @@ app.get('/typetest', (req, res) => {
 });
 
 const tictactoeNamespace = io.of('/tictactoe');
+  tictactoeNamespace.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+
+      if (!token) {
+        console.log("Authentication error");
+        const err = new Error("not authorized");
+        return next(err);
+      }
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          console.log("Authentication error");
+          const err = new Error("not authorized");
+          return next(err);
+        }
+        // Attach the decoded user information to the socket object
+        socket.user = decoded;
+        next();
+      });
+    });
+
+  
 
 tictactoeNamespace.on('connection', (socket) => {
   console.log(`A user connected ${socket.id}`);
@@ -215,7 +242,30 @@ tictactoeNamespace.on('connection', (socket) => {
 
 const typetestNamespace = io.of('/typetest');
 
+  typetestNamespace.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+
+      if (!token) {
+        console.log("Authentication error");
+        const err = new Error("not authorized");
+        return next(err);
+      }
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          console.log("Authentication error");
+          const err = new Error("not authorized");
+          return next(err);
+        }
+        // Attach the decoded user information to the socket object
+        socket.user = decoded;
+        next();
+      });
+    });
+
 typetestNamespace.on('connection',(socket) => {
+  console.log(`auth connected ${socket.user?.userId}`);
+
   console.log(`A user connected ${socket.id}`);
 
   socket.on('createRoom',({playerName, gameRoomId}) => {
